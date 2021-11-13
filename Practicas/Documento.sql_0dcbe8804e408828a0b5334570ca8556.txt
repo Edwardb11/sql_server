@@ -1,0 +1,184 @@
+--CREACION DE SPs para la consultas
+
+
+CREATE PROCEDURE usp_consulta1
+AS
+BEGIN
+	
+	SET NOCOUNT ON;
+
+    -- Insert statements for procedure here
+	SELECT 
+	e.enfermedad
+	,SUM(CASE WHEN  datediff(year,p.fecha_nacimiento,getdate())<=65 then 1 else 0 end) as menosDe65
+	,SUM(CASE WHEN  datediff(year,p.fecha_nacimiento,getdate()) BETWEEN 66 AND 80 then 1 else 0 end) as Entre66a80
+	,SUM(CASE WHEN  datediff(year,p.fecha_nacimiento,getdate()) > 80 then 1 else 0 end) as mayorDe80
+
+FROM 
+	enfermedad e
+
+	JOIN paciente_enfermedad pe ON pe.id_enfermedad = e.id_enfermedad
+	JOIN paciente p ON p.id_paciente = pe.id_paciente
+
+GROUP BY
+	e.enfermedad
+
+
+
+END
+GO
+
+
+
+CREATE PROCEDURE usp_consulta2
+	--se debe pasar el id que se quiera consultar
+	@id as INT
+
+AS
+BEGIN
+
+	SET NOCOUNT ON;
+
+/*Consulta que permita conocer que medicamento consume un paciente del asilo y su edad*/
+
+	SELECT DISTINCT
+		CONCAT_WS(' ', p.nombres, p.apellidos) as Paciente
+		,(cast(datediff(dd, p.fecha_nacimiento ,GETDATE()) / 365.25 as int)) as edad
+		,ISNULL(m.medicamento, 'No consume medicamento') as medicamento
+	
+	
+		
+	
+	FROM
+	
+		paciente p
+	
+		left JOIN paciente_enfermedad pe ON pe.id_paciente = p.id_paciente
+		left JOIN paciente_medicamento pm ON p.id_paciente = pm.id_paciente
+		left JOIN medicamento m ON m.id_medicamento = pm.id_medicamento
+	
+		WHERE p.id_paciente = @id;
+
+END
+GO
+
+
+
+CREATE PROCEDURE usp_consulta3 
+
+AS
+BEGIN
+
+	SET NOCOUNT ON;
+
+ 
+	SELECT
+	m.medicamento AS Medicamento,
+	COUNT(1) as Cant_Consumidores
+	
+
+	FROM
+		paciente p
+
+	JOIN paciente_medicamento pm ON pm.id_paciente = p.id_paciente
+	JOIN medicamento m ON m.id_medicamento = pm.id_medicamento
+
+GROUP BY
+	m.medicamento
+END
+GO
+
+--CREACION DEL CRUD PARA LA ENTIDAD MEDICAMENTO
+
+
+--CREATE
+
+CREATE PROCEDURE usp_guardarMedicamento
+	
+	@medicamento as VARCHAR(80)
+AS
+BEGIN
+	
+	SET NOCOUNT ON;
+
+	INSERT INTO 
+		medicamento(medicamento)
+	VALUES
+		(@medicamento)
+	;
+
+
+	SELECT SCOPE_IDENTITY() AS Id;
+
+END
+GO
+
+--READ
+
+CREATE PROCEDURE usp_buscarMedicamento
+	
+	@id as INT
+AS
+BEGIN
+	
+	SET NOCOUNT ON;
+
+	SELECT 
+		*
+	FROM
+		medicamento m
+
+	WHERE m.id_medicamento = @id
+
+END
+GO
+
+
+--UPDATE
+CREATE PROCEDURE usp_actualizarMedicamento
+	@id as INT,
+	@medicamento as varchar(80)
+AS
+BEGIN
+	
+	SET NOCOUNT ON;
+
+   
+	UPDATE
+		medicamento
+	SET
+		medicamento = @medicamento
+	
+	WHERE medicamento.id_medicamento = @id			
+	;
+
+END
+GO
+
+--DELETE
+CREATE PROCEDURE usp_eliminarMedicamento
+	@id as INT
+AS
+BEGIN
+	
+	SET NOCOUNT ON;
+
+    -- Insert statements for procedure here
+	DELETE FROM
+		medicamento
+	WHERE medicamento.id_medicamento = @id			
+	;
+
+	SELECT
+	'Se ha eliminado' as Resultado
+	;
+
+END
+GO
+
+
+
+
+
+
+
